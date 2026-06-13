@@ -1,0 +1,284 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Nuclear Shell Correction & Potential Energy Surfaces</title>
+    <link rel="stylesheet" href="style.css">
+    
+    <!-- MathJax for rendering math equations beautifully -->
+    <script id="MathJax-script" async src="https://cdn.jsdelivr.net/npm/mathjax@3/es5/tex-mml-chtml.js"></script>
+    
+    <!-- Three.js and OrbitControls for interactive 3D rendering -->
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/three.js/r128/three.min.js"></script>
+    <script src="https://cdn.jsdelivr.net/npm/three@0.128.0/examples/js/controls/OrbitControls.js"></script>
+</head>
+<body>
+
+    <header>
+        <div>
+            <h1>
+                <span style="color: var(--accent-proton);">◈</span> Strutinsky Shell Correction Visualizer
+            </h1>
+            <div class="subtitle">Micro-Macro Nuclear Potential Energy Surfaces (PES)</div>
+        </div>
+        <div class="header-credit" style="font-size: 0.85rem; color: var(--text-secondary); font-family: 'Outfit', sans-serif;">
+            Developed by <a href="https://www.dr-abhishek.com/" target="_blank" rel="noopener noreferrer">Dr. Abhishek</a>
+        </div>
+    </header>
+
+    <div class="app-container">
+        <!-- Sidebar Controls -->
+        <aside class="sidebar">
+            <h2>Isotope Selection</h2>
+            <div class="card">
+                <div class="control-group">
+                    <label class="control-label" for="preset-select">Isotope Presets</label>
+                    <select id="preset-select">
+                        <!-- Populated dynamically -->
+                    </select>
+                </div>
+            </div>
+
+            <h2>Nuclear Composition</h2>
+            <div class="card proton-card">
+                <div class="control-group">
+                    <span class="control-label">
+                        Protons (Z)
+                        <span id="z-val" class="control-value" style="color: var(--accent-proton);">62</span>
+                    </span>
+                    <input type="range" id="z-slider" min="8" max="120" step="2" value="62">
+                </div>
+                
+                <div class="control-group">
+                    <span class="control-label">
+                        Neutrons (N)
+                        <span id="n-val" class="control-value" style="color: var(--accent-neutron);">90</span>
+                    </span>
+                    <input type="range" id="n-slider" min="8" max="150" step="2" value="90">
+                </div>
+            </div>
+
+            <h2>Model Parameters</h2>
+            <div class="card">
+                <div class="control-group">
+                    <label class="control-label" for="param-select">Nilsson Parameter Set (κ, μ)</label>
+                    <select id="param-select">
+                        <option value="universal">Lund Universal (Default)</option>
+                        <option value="rare_earth">Rare Earth (A ≈ 150-180)</option>
+                        <option value="actinide">Actinides (A ≈ 250)</option>
+                    </select>
+                </div>
+
+                <div class="control-group">
+                    <span class="control-label">
+                        Deformation (β)
+                        <span id="beta-val" class="control-value" style="color: var(--accent-gold);">0.20</span>
+                    </span>
+                    <input type="range" id="beta-slider" min="0.0" max="0.6" step="0.01" value="0.20">
+                </div>
+
+                <div class="control-group">
+                    <span class="control-label">
+                        Triaxiality (γ)
+                        <span id="gamma-shape-val" class="control-value" style="color: var(--accent-gold);">0°</span>
+                    </span>
+                    <input type="range" id="gamma-shape-slider" min="0" max="60" step="1" value="0">
+                </div>
+            </div>
+
+            <h2>Strutinsky Smearing</h2>
+            <div class="card neutron-card">
+                <div class="control-group">
+                    <span class="control-label">
+                        Smearing Width (γ_smear)
+                        <span id="gamma-smear-val" class="control-value" style="color: var(--accent-neutron);">1.20</span>
+                    </span>
+                    <input type="range" id="gamma-smear-slider" min="0.5" max="2.0" step="0.05" value="1.20">
+                </div>
+                
+                <div class="control-group">
+                    <label class="control-label" for="porder-select">Correction Order (p)</label>
+                    <select id="porder-select">
+                        <option value="6">p = 6 (Gauss-Hermite)</option>
+                        <option value="4">p = 4 (Gauss-Hermite)</option>
+                        <option value="2">p = 2 (Gauss-Hermite)</option>
+                    </select>
+                </div>
+            </div>
+        </aside>
+
+        <!-- Main Dashboard -->
+        <main class="dashboard">
+            <!-- Summary Metrics Cards -->
+            <section class="metrics-row">
+                <div class="metric-card proton">
+                    <div class="metric-label">Protons (Z)</div>
+                    <div class="metric-value" id="m-zp">62</div>
+                    <div class="metric-sub" id="m-shell-p">0.00 MeV</div>
+                </div>
+                <div class="metric-card neutron">
+                    <div class="metric-label">Neutrons (N)</div>
+                    <div class="metric-value" id="m-nn">90</div>
+                    <div class="metric-sub" id="m-shell-n">0.00 MeV</div>
+                </div>
+                <div class="metric-card total">
+                    <div class="metric-label">Total Mass (A)</div>
+                    <div class="metric-value" id="m-a">152</div>
+                    <div class="metric-sub" id="m-shell-tot">0.00 MeV</div>
+                </div>
+                <div class="metric-card" style="border-left: 3px solid var(--accent-gold);">
+                    <div class="metric-label">LDM rel (E - E_sph)</div>
+                    <div class="metric-value" id="m-ldm-rel" style="color: var(--accent-gold);">0.00 MeV</div>
+                    <div class="metric-sub">Smooth Macroscopic</div>
+                </div>
+                <div class="metric-card total">
+                    <div class="metric-label">Total Relative Energy</div>
+                    <div class="metric-value" id="m-etot" style="color: var(--accent-total);">0.00 MeV</div>
+                    <div class="metric-sub">Macro + Micro</div>
+                </div>
+                <div class="metric-card" style="border-left: 3px solid #fbbf24;">
+                    <div class="metric-label">Stable Ground Shape</div>
+                    <div class="metric-value" style="font-size: 1.15rem; display: flex; flex-direction: column; gap: 2px; line-height: 1.2; padding: 4px 0;">
+                        <span>β = <span id="m-stable-b">0.25</span></span>
+                        <span>γ = <span id="m-stable-g">0°</span></span>
+                    </div>
+                    <div class="metric-sub">PES Energy Minimum</div>
+                </div>
+            </section>
+
+            <!-- Navigation Tabs -->
+            <nav class="tabs">
+                <button class="tab-btn active" data-tab="levels">1. Nilsson Single-Particle Levels</button>
+                <button class="tab-btn" data-tab="smearing">2. Strutinsky Average & Plateau</button>
+                <button class="tab-btn" data-tab="pes">3. Potential Energy Surface (PES)</button>
+            </nav>
+
+            <!-- Tab Content 1: Nilsson levels -->
+            <section id="levels-panel" class="view-panel active">
+                <div class="grid-2col">
+                    <div class="canvas-card">
+                        <h3>
+                            <span>◉</span> Single-Particle Orbitals splitting vs. Deformation
+                        </h3>
+                        <div class="segmented-control">
+                            <button id="toggle-proton" class="active">Proton States (Z)</button>
+                            <button id="toggle-neutron">Neutron States (N)</button>
+                        </div>
+                        <div class="canvas-container" style="aspect-ratio: 1.7; display: flex; gap: 0.5rem; background: transparent; border: none;">
+                            <div style="flex: 1.5; background: rgba(6, 9, 17, 0.7); border: 1px solid var(--border-color); border-radius: 8px; overflow: hidden; position: relative;">
+                                <canvas id="nilsson-canvas"></canvas>
+                            </div>
+                            <div style="flex: 1; background: rgba(6, 9, 17, 0.7); border: 1px solid var(--border-color); border-radius: 8px; overflow: hidden; position: relative; display: flex; align-items: center; justify-content: center;">
+                                <div id="nucleus-3d-container" style="width: 100%; height: 100%; position: relative;"></div>
+                                <div style="position: absolute; bottom: 8px; left: 8px; font-size: 10px; color: var(--text-muted); font-family: 'Outfit', sans-serif;">3D Shape Preview</div>
+                            </div>
+                        </div>
+                    </div>
+                    
+                    <div class="explainer-card">
+                        <h2>The Nilsson Model Backend</h2>
+                        <p>
+                            In the spherical shell model, single-particle states are highly degenerate. When a nucleus deforms, this degeneracy is broken. The Nilsson Model describes how these levels split under spheroidal (\(\beta\)) and triaxial (\(\gamma\)) deformation:
+                        </p>
+                        <div class="math">
+                            \[H = H_0 - \frac{2}{3}\beta \hbar\omega_0 r^2 \left[ \cos\gamma Y_{20} + \frac{\sin\gamma}{\sqrt{2}} (Y_{22} + Y_{2,-2}) \right] + C \mathbf{l}\cdot\mathbf{s} + D \mathbf{l}^2\]
+                        </div>
+                        <p>
+                            Where <strong>&beta;</strong> represents the quadrupole deformation magnitude and <strong>&gamma;</strong> is the triaxiality angle:
+                        </p>
+                        <ul style="margin: 0.5rem 0 0.5rem 1.25rem; font-size: 0.85rem; color: var(--text-secondary);">
+                            <li><strong>&gamma; = 0°</strong>: Axial Prolate (cigar-shaped)</li>
+                            <li><strong>&gamma; = 60°</strong>: Axial Oblate (pancake-shaped)</li>
+                            <li><strong>0° &lt; &gamma; &lt; 60°</strong>: Triaxial asymmetry (all axes unequal)</li>
+                        </ul>
+                        <p>
+                            <strong>How to read the chart:</strong>
+                            Moving the <strong>Deformation slider</strong> in the sidebar shifts the vertical yellow indicator, showing how the levels cross and how shell gaps open and close at different shapes. The active triaxiality \(\gamma\) splits the levels further, which can be modified using the <strong>Triaxiality slider</strong>.
+                        </p>
+                    </div>
+                </div>
+            </section>
+
+            <!-- Tab Content 2: Strutinsky Average & Plateau -->
+            <section id="smearing-panel" class="view-panel">
+                <div class="grid-2col">
+                    <div class="canvas-card">
+                        <h3>
+                            <span>◉</span> Shell Correction δE_shell vs. Smearing Width γ
+                        </h3>
+                        <div class="canvas-container">
+                            <canvas id="plateau-canvas"></canvas>
+                        </div>
+                    </div>
+                    
+                    <div class="explainer-card">
+                        <h2>Strutinsky's Smearing & The Plateau Condition</h2>
+                        <p>
+                            The shell correction method extracts the quantum mechanical fluctuation energy by subtracting a smooth average energy \(\tilde{E}\) from the discrete sum of occupied energies:
+                        </p>
+                        <div class="math">
+                            \[\delta E_{\text{shell}} = \sum_{i=1}^{A} e_i - \tilde{E}(\gamma, p)\]
+                        </div>
+                        <p>
+                            To calculate the smooth average energy, we smear the delta-function single-particle levels into smooth Gaussians multiplied by correcting Hermite polynomials of order \(p\). This creates a smoothed level density \(\tilde{g}(e)\):
+                        </p>
+                        <div class="math">
+                            \[\tilde{g}(e) = \frac{1}{\gamma\sqrt{\pi}} \sum_{i} e^{-u_i^2} f_p(u_i), \quad u_i = \frac{e - e_i}{\gamma}\]
+                        </div>
+                        <p>
+                            For the shell correction to be physically meaningful, it must be independent of the arbitrary smearing parameter \(\gamma\). The chart on the left plots \(\delta E_{\text{shell}}\) vs. \(\gamma\). 
+                        </p>
+                        <p>
+                            The flat region where the curve becomes horizontal is the <strong>Stable Plateau Region</strong> (typically around \(\gamma \approx 1.2 \hbar\omega_0\)). In this region, \(\frac{\partial (\delta E)}{\partial \gamma} \approx 0\), yielding a robust quantum correction.
+                        </p>
+                    </div>
+                </div>
+            </section>
+
+            <!-- Tab Content 3: PES Curves -->
+            <section id="pes-panel" class="view-panel">
+                <div class="grid-2col">
+                    <div class="canvas-card">
+                        <h3>
+                            <span>◉</span> Microscopic-Macroscopic Total Potential Energy Surface
+                        </h3>
+                        <div class="segmented-control" style="margin-bottom: 0.5rem; max-width: 280px;">
+                            <button id="toggle-pes-3d" class="active">3D Landscape</button>
+                            <button id="toggle-pes-2d">2D Heatmap</button>
+                        </div>
+                        <div class="canvas-container" style="aspect-ratio: 1.3; position: relative; background: rgba(6, 9, 17, 0.7); border: 1px solid var(--border-color); border-radius: 8px; overflow: hidden;">
+                            <div id="pes-3d-container" style="width: 100%; height: 100%;"></div>
+                            <canvas id="pes-2d-canvas" style="width: 100%; height: 100%; display: none; position: absolute; top: 0; left: 0;"></canvas>
+                        </div>
+                    </div>
+                    
+                    <div class="explainer-card">
+                        <h2>Potential Energy Surface (PES)</h2>
+                        <p>
+                            In the microscopic-macroscopic model, the total deformation energy is computed as a 2D surface over the quadrupole deformation \(\beta\) and triaxiality \(\gamma\):
+                        </p>
+                        <div class="math">
+                            \[E_{\text{total}}(\beta, \gamma) = E_{\text{LDM, rel}}(\beta, \gamma) + \delta E_{\text{shell}, p}(\beta, \gamma) + \delta E_{\text{shell}, n}(\beta, \gamma)\]
+                        </div>
+                        <p>
+                            The **PES** represents nuclear shapes using polar coordinates:
+                        </p>
+                        <ul>
+                            <li>The radial distance from the origin is the deformation magnitude \(\beta\).</li>
+                            <li>The polar angle is the triaxiality \(\gamma\). The wedge spans from \(0^\circ\) (prolate, football-shaped) to \(60^\circ\) (oblate, pancake-shaped).</li>
+                            <li>Values in between (\(0^\circ < \gamma < 60^\circ\)) represent triaxial shapes.</li>
+                        </ul>
+                        <p>
+                            The 3D surface plot on the left shows this energy surface. The **glowing marker** represents the current shape of the nucleus, and the **gold star** marks the predicted ground state. You can rotate and zoom the 3D view using your mouse.
+                        </p>
+                    </div>
+                </div>
+            </section>
+        </main>
+    </div>
+
+    <!-- Script Orchestration -->
+    <script type="module" src="main.js"></script>
+</body>
+</html>
