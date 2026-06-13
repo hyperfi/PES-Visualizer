@@ -22,14 +22,22 @@
             </h1>
             <div class="subtitle">Micro-Macro Nuclear Potential Energy Surfaces (PES)</div>
         </div>
-        <div class="header-credit" style="font-size: 0.85rem; color: var(--text-secondary); font-family: 'Outfit', sans-serif;">
-            Developed by <a href="https://www.dr-abhishek.com/" target="_blank" rel="noopener noreferrer">Dr. Abhishek</a>
+        <div class="header-actions">
+            <button id="drawer-toggle-btn" class="drawer-toggle-btn">
+                <span>⚙️</span> Parameters
+            </button>
+            <div class="header-credit" style="font-size: 0.85rem; color: var(--text-secondary); font-family: 'Outfit', sans-serif;">
+                Developed by <a href="https://www.dr-abhishek.com/" target="_blank" rel="noopener noreferrer">Dr. Abhishek</a>
+            </div>
         </div>
     </header>
 
     <div class="app-container">
+        <!-- Drawer Backdrop Overlay for Mobile -->
+        <div id="drawer-overlay" class="drawer-overlay"></div>
+
         <!-- Sidebar Controls -->
-        <aside class="sidebar">
+        <aside class="sidebar" id="sidebar">
             <h2>Isotope Selection</h2>
             <div class="card">
                 <div class="control-group">
@@ -112,32 +120,32 @@
         <main class="dashboard">
             <!-- Summary Metrics Cards -->
             <section class="metrics-row">
-                <div class="metric-card proton">
+                <div class="metric-card proton" data-tooltip="Number of Protons (Z) & Proton Shell Correction (δEp) in MeV. Calculated using Strutinsky's smearing method to identify shell closure effects.">
                     <div class="metric-label">Protons (Z)</div>
                     <div class="metric-value" id="m-zp">62</div>
                     <div class="metric-sub" id="m-shell-p">0.00 MeV</div>
                 </div>
-                <div class="metric-card neutron">
+                <div class="metric-card neutron" data-tooltip="Number of Neutrons (N) & Neutron Shell Correction (δEn) in MeV. Calculated using Strutinsky's smearing method to identify shell closure effects.">
                     <div class="metric-label">Neutrons (N)</div>
                     <div class="metric-value" id="m-nn">90</div>
                     <div class="metric-sub" id="m-shell-n">0.00 MeV</div>
                 </div>
-                <div class="metric-card total">
+                <div class="metric-card total" data-tooltip="Total Nucleon Mass (A = Z + N) & Total Quantum Shell Correction (δE_shell = δEp + δEn) in MeV. Sums the proton and neutron shell corrections.">
                     <div class="metric-label">Total Mass (A)</div>
                     <div class="metric-value" id="m-a">152</div>
                     <div class="metric-sub" id="m-shell-tot">0.00 MeV</div>
                 </div>
-                <div class="metric-card" style="border-left: 3px solid var(--accent-gold);">
+                <div class="metric-card ldm" data-tooltip="Liquid Drop Model relative energy (E - E_sph) in MeV. Represents the classical macroscopic bulk deformation energy of the nucleus." style="border-left: 3px solid var(--accent-gold);">
                     <div class="metric-label">LDM rel (E - E_sph)</div>
                     <div class="metric-value" id="m-ldm-rel" style="color: var(--accent-gold);">0.00 MeV</div>
                     <div class="metric-sub">Smooth Macroscopic</div>
                 </div>
-                <div class="metric-card total">
+                <div class="metric-card total-energy" data-tooltip="Total relative nuclear deformation energy (Etot = E_LDM,rel + δE_shell) in MeV. Sum of macroscopic bulk and microscopic quantum effects." style="border-left: 3px solid var(--accent-total);">
                     <div class="metric-label">Total Relative Energy</div>
                     <div class="metric-value" id="m-etot" style="color: var(--accent-total);">0.00 MeV</div>
                     <div class="metric-sub">Macro + Micro</div>
                 </div>
-                <div class="metric-card" style="border-left: 3px solid #fbbf24;">
+                <div class="metric-card shape" data-tooltip="Deformation (β) and Triaxiality (γ) values of the most stable ground shape (where the total relative energy is minimized on the PES)." style="border-left: 3px solid #fbbf24;">
                     <div class="metric-label">Stable Ground Shape</div>
                     <div class="metric-value" style="font-size: 1.15rem; display: flex; flex-direction: column; gap: 2px; line-height: 1.2; padding: 4px 0;">
                         <span>β = <span id="m-stable-b">0.25</span></span>
@@ -177,25 +185,29 @@
                     </div>
                     
                     <div class="explainer-card">
-                        <h2>The Nilsson Model Backend</h2>
-                        <p>
-                            In the spherical shell model, single-particle states are highly degenerate. When a nucleus deforms, this degeneracy is broken. The Nilsson Model describes how these levels split under spheroidal (\(\beta\)) and triaxial (\(\gamma\)) deformation:
-                        </p>
-                        <div class="math">
-                            \[H = H_0 - \frac{2}{3}\beta \hbar\omega_0 r^2 \left[ \cos\gamma Y_{20} + \frac{\sin\gamma}{\sqrt{2}} (Y_{22} + Y_{2,-2}) \right] + C \mathbf{l}\cdot\mathbf{s} + D \mathbf{l}^2\]
-                        </div>
-                        <p>
-                            Where <strong>&beta;</strong> represents the quadrupole deformation magnitude and <strong>&gamma;</strong> is the triaxiality angle:
-                        </p>
-                        <ul style="margin: 0.5rem 0 0.5rem 1.25rem; font-size: 0.85rem; color: var(--text-secondary);">
-                            <li><strong>&gamma; = 0°</strong>: Axial Prolate (cigar-shaped)</li>
-                            <li><strong>&gamma; = 60°</strong>: Axial Oblate (pancake-shaped)</li>
-                            <li><strong>0° &lt; &gamma; &lt; 60°</strong>: Triaxial asymmetry (all axes unequal)</li>
-                        </ul>
-                        <p>
-                            <strong>How to read the chart:</strong>
-                            Moving the <strong>Deformation slider</strong> in the sidebar shifts the vertical yellow indicator, showing how the levels cross and how shell gaps open and close at different shapes. The active triaxiality \(\gamma\) splits the levels further, which can be modified using the <strong>Triaxiality slider</strong>.
-                        </p>
+                        <details class="explainer-details" open>
+                            <summary>💡 Nilsson Model Theory</summary>
+                            <div class="explainer-content">
+                                <p>
+                                    In the spherical shell model, single-particle states are highly degenerate. When a nucleus deforms, this degeneracy is broken. The Nilsson Model describes how these levels split under spheroidal (\(\beta\)) and triaxial (\(\gamma\)) deformation:
+                                </p>
+                                <div class="math">
+                                    \[H = H_0 - \frac{2}{3}\beta \hbar\omega_0 r^2 \left[ \cos\gamma Y_{20} + \frac{\sin\gamma}{\sqrt{2}} (Y_{22} + Y_{2,-2}) \right] + C \mathbf{l}\cdot\mathbf{s} + D \mathbf{l}^2\]
+                                </div>
+                                <p>
+                                    Where <strong>&beta;</strong> represents the quadrupole deformation magnitude and <strong>&gamma;</strong> is the triaxiality angle:
+                                </p>
+                                <ul style="margin: 0.5rem 0 0.5rem 1.25rem; font-size: 0.85rem; color: var(--text-secondary);">
+                                    <li><strong>&gamma; = 0°</strong>: Axial Prolate (cigar-shaped)</li>
+                                    <li><strong>&gamma; = 60°</strong>: Axial Oblate (pancake-shaped)</li>
+                                    <li><strong>0° &lt; &gamma; &lt; 60°</strong>: Triaxial asymmetry (all axes unequal)</li>
+                                </ul>
+                                <p>
+                                    <strong>How to read the chart:</strong>
+                                    Moving the <strong>Deformation slider</strong> in the sidebar shifts the vertical yellow indicator, showing how the levels cross and how shell gaps open and close at different shapes. The active triaxiality \(\gamma\) splits the levels further, which can be modified using the <strong>Triaxiality slider</strong>.
+                                </p>
+                            </div>
+                        </details>
                     </div>
                 </div>
             </section>
@@ -213,25 +225,29 @@
                     </div>
                     
                     <div class="explainer-card">
-                        <h2>Strutinsky's Smearing & The Plateau Condition</h2>
-                        <p>
-                            The shell correction method extracts the quantum mechanical fluctuation energy by subtracting a smooth average energy \(\tilde{E}\) from the discrete sum of occupied energies:
-                        </p>
-                        <div class="math">
-                            \[\delta E_{\text{shell}} = \sum_{i=1}^{A} e_i - \tilde{E}(\gamma, p)\]
-                        </div>
-                        <p>
-                            To calculate the smooth average energy, we smear the delta-function single-particle levels into smooth Gaussians multiplied by correcting Hermite polynomials of order \(p\). This creates a smoothed level density \(\tilde{g}(e)\):
-                        </p>
-                        <div class="math">
-                            \[\tilde{g}(e) = \frac{1}{\gamma\sqrt{\pi}} \sum_{i} e^{-u_i^2} f_p(u_i), \quad u_i = \frac{e - e_i}{\gamma}\]
-                        </div>
-                        <p>
-                            For the shell correction to be physically meaningful, it must be independent of the arbitrary smearing parameter \(\gamma\). The chart on the left plots \(\delta E_{\text{shell}}\) vs. \(\gamma\). 
-                        </p>
-                        <p>
-                            The flat region where the curve becomes horizontal is the <strong>Stable Plateau Region</strong> (typically around \(\gamma \approx 1.2 \hbar\omega_0\)). In this region, \(\frac{\partial (\delta E)}{\partial \gamma} \approx 0\), yielding a robust quantum correction.
-                        </p>
+                        <details class="explainer-details" open>
+                            <summary>💡 Strutinsky Smearing & Plateau</summary>
+                            <div class="explainer-content">
+                                <p>
+                                    The shell correction method extracts the quantum mechanical fluctuation energy by subtracting a smooth average energy \(\tilde{E}\) from the discrete sum of occupied energies:
+                                </p>
+                                <div class="math">
+                                    \[\delta E_{\text{shell}} = \sum_{i=1}^{A} e_i - \tilde{E}(\gamma, p)\]
+                                </div>
+                                <p>
+                                    To calculate the smooth average energy, we smear the delta-function single-particle levels into smooth Gaussians multiplied by correcting Hermite polynomials of order \(p\). This creates a smoothed level density \(\tilde{g}(e)\):
+                                </p>
+                                <div class="math">
+                                    \[\tilde{g}(e) = \frac{1}{\gamma\sqrt{\pi}} \sum_{i} e^{-u_i^2} f_p(u_i), \quad u_i = \frac{e - e_i}{\gamma}\]
+                                </div>
+                                <p>
+                                    For the shell correction to be physically meaningful, it must be independent of the arbitrary smearing parameter \(\gamma\). The chart on the left plots \(\delta E_{\text{shell}}\) vs. \(\gamma\). 
+                                </p>
+                                <p>
+                                    The flat region where the curve becomes horizontal is the <strong>Stable Plateau Region</strong> (typically around \(\gamma \approx 1.2 \hbar\omega_0\)). In this region, \(\frac{\partial (\delta E)}{\partial \gamma} \approx 0\), yielding a robust quantum correction.
+                                </p>
+                            </div>
+                        </details>
                     </div>
                 </div>
             </section>
@@ -254,24 +270,28 @@
                     </div>
                     
                     <div class="explainer-card">
-                        <h2>Potential Energy Surface (PES)</h2>
-                        <p>
-                            In the microscopic-macroscopic model, the total deformation energy is computed as a 2D surface over the quadrupole deformation \(\beta\) and triaxiality \(\gamma\):
-                        </p>
-                        <div class="math">
-                            \[E_{\text{total}}(\beta, \gamma) = E_{\text{LDM, rel}}(\beta, \gamma) + \delta E_{\text{shell}, p}(\beta, \gamma) + \delta E_{\text{shell}, n}(\beta, \gamma)\]
-                        </div>
-                        <p>
-                            The **PES** represents nuclear shapes using polar coordinates:
-                        </p>
-                        <ul>
-                            <li>The radial distance from the origin is the deformation magnitude \(\beta\).</li>
-                            <li>The polar angle is the triaxiality \(\gamma\). The wedge spans from \(0^\circ\) (prolate, football-shaped) to \(60^\circ\) (oblate, pancake-shaped).</li>
-                            <li>Values in between (\(0^\circ < \gamma < 60^\circ\)) represent triaxial shapes.</li>
-                        </ul>
-                        <p>
-                            The 3D surface plot on the left shows this energy surface. The **glowing marker** represents the current shape of the nucleus, and the **gold star** marks the predicted ground state. You can rotate and zoom the 3D view using your mouse.
-                        </p>
+                        <details class="explainer-details" open>
+                            <summary>💡 Potential Energy Surface Theory</summary>
+                            <div class="explainer-content">
+                                <p>
+                                    In the microscopic-macroscopic model, the total deformation energy is computed as a 2D surface over the quadrupole deformation \(\beta\) and triaxiality \(\gamma\):
+                                </p>
+                                <div class="math">
+                                    \[E_{\text{total}}(\beta, \gamma) = E_{\text{LDM, rel}}(\beta, \gamma) + \delta E_{\text{shell}, p}(\beta, \gamma) + \delta E_{\text{shell}, n}(\beta, \gamma)\]
+                                </div>
+                                <p>
+                                    The **PES** represents nuclear shapes using polar coordinates:
+                                </p>
+                                <ul>
+                                    <li>The radial distance from the origin is the deformation magnitude \(\beta\).</li>
+                                    <li>The polar angle is the triaxiality \(\gamma\). The wedge spans from \(0^\circ\) (prolate, football-shaped) to \(60^\circ\) (oblate, pancake-shaped).</li>
+                                    <li>Values in between (\(0^\circ < \gamma < 60^\circ\)) represent triaxial shapes.</li>
+                                </ul>
+                                <p>
+                                    The 3D surface plot on the left shows this energy surface. The **glowing marker** represents the current shape of the nucleus, and the **gold star** marks the predicted ground state. You can rotate and zoom the 3D view using your mouse.
+                                </p>
+                            </div>
+                        </details>
                     </div>
                 </div>
             </section>

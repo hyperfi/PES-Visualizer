@@ -69,7 +69,12 @@ const el = {
     metricLdmRel: document.getElementById('m-ldm-rel'),
     metricEtot: document.getElementById('m-etot'),
     metricStableB: document.getElementById('m-stable-b'),
-    metricStableG: document.getElementById('m-stable-g')
+    metricStableG: document.getElementById('m-stable-g'),
+    
+    // Mobile Drawer elements
+    drawerToggleBtn: document.getElementById('drawer-toggle-btn'),
+    drawerOverlay: document.getElementById('drawer-overlay'),
+    sidebar: document.getElementById('sidebar')
 };
 
 // Initialize event listeners and 3D scenes
@@ -262,12 +267,45 @@ function init() {
         });
     });
     
-    // 5. Resize event
+    // 5. Mobile Drawer toggling
+    if (el.drawerToggleBtn && el.sidebar && el.drawerOverlay) {
+        el.drawerToggleBtn.addEventListener('click', (e) => {
+            e.stopPropagation();
+            el.sidebar.classList.toggle('active');
+            el.drawerOverlay.classList.toggle('active');
+        });
+        
+        el.drawerOverlay.addEventListener('click', () => {
+            closeMobileDrawer();
+        });
+    }
+    
+    // 6. Initialize explainer states based on screen size
+    adjustExplainersForScreenSize();
+    
+    // 7. Resize event
     window.addEventListener('resize', debounce(() => {
         resize3D(el.nucleus3DContainer, el.pes3DContainer);
         drawAll();
         updatePESRepresentation();
+        adjustExplainersForScreenSize();
     }, 150));
+}
+
+// Close mobile parameters drawer
+function closeMobileDrawer() {
+    if (el.sidebar && el.drawerOverlay) {
+        el.sidebar.classList.remove('active');
+        el.drawerOverlay.classList.remove('active');
+    }
+}
+
+// Automatically collapse or expand details based on window size
+function adjustExplainersForScreenSize() {
+    const isMobile = window.innerWidth <= 1024;
+    document.querySelectorAll('.explainer-details').forEach(details => {
+        details.open = !isMobile;
+    });
 }
 
 // Load isotope preset
@@ -307,6 +345,7 @@ function loadPreset(preset) {
     }
     el.paramSelect.value = state.paramSet;
     
+    closeMobileDrawer();
     onStructureChanged();
 }
 

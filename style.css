@@ -260,42 +260,42 @@ input[type=range]:active::-webkit-slider-thumb {
 /* Tabs */
 .tabs {
     display: flex;
-    gap: 1rem;
-    border-bottom: 1px solid var(--border-color);
-    padding-bottom: 2px;
+    background: rgba(255, 255, 255, 0.02);
+    border: 1px solid rgba(255, 255, 255, 0.08);
+    border-radius: 12px;
+    padding: 4px;
+    gap: 4px;
+    backdrop-filter: blur(8px);
+    -webkit-backdrop-filter: blur(8px);
+    margin-bottom: 0.5rem;
 }
 
 .tab-btn {
+    flex: 1;
     background: transparent;
-    border: none;
+    border: 1px solid transparent;
     color: var(--text-secondary);
     font-family: 'Outfit', sans-serif;
-    font-size: 1rem;
-    font-weight: 500;
-    padding: 0.5rem 1rem;
+    font-size: 0.95rem;
+    font-weight: 600;
+    padding: 0.75rem 1rem;
     cursor: pointer;
+    border-radius: 8px;
+    transition: all 0.25s cubic-bezier(0.4, 0, 0.2, 1);
+    text-align: center;
     position: relative;
-    transition: color 0.2s;
 }
 
 .tab-btn:hover {
     color: var(--text-primary);
+    background: rgba(255, 255, 255, 0.04);
 }
 
 .tab-btn.active {
     color: var(--accent-proton);
-}
-
-.tab-btn.active::after {
-    content: '';
-    position: absolute;
-    bottom: -3px;
-    left: 0;
-    width: 100%;
-    height: 3px;
-    background: var(--accent-proton);
-    border-radius: 2px;
-    box-shadow: 0 -1px 8px var(--accent-proton);
+    background: rgba(0, 240, 255, 0.08);
+    border-color: rgba(0, 240, 255, 0.2);
+    box-shadow: 0 0 12px rgba(0, 240, 255, 0.1);
 }
 
 /* Visualisation Area Grid */
@@ -388,6 +388,8 @@ canvas {
     display: grid;
     grid-template-columns: repeat(auto-fit, minmax(180px, 1fr));
     gap: 1rem;
+    position: relative;
+    z-index: 10;
 }
 
 .metric-card {
@@ -398,11 +400,128 @@ canvas {
     display: flex;
     flex-direction: column;
     gap: 0.25rem;
+    position: relative;
+    cursor: pointer;
+    transition: transform 0.2s ease, border-color 0.2s ease, box-shadow 0.2s ease;
+}
+
+/* Elevate the active hovered card (and its tooltip) above sibling cards in the grid */
+.metric-card:hover {
+    transform: translateY(-3px);
+    z-index: 100;
 }
 
 .metric-card.proton { border-left: 3px solid var(--accent-proton); }
+.metric-card.proton:hover {
+    box-shadow: 0 0 15px rgba(0, 240, 255, 0.25);
+    border-color: var(--accent-proton);
+}
+
 .metric-card.neutron { border-left: 3px solid var(--accent-neutron); }
+.metric-card.neutron:hover {
+    box-shadow: 0 0 15px rgba(16, 185, 129, 0.25);
+    border-color: var(--accent-neutron);
+}
+
 .metric-card.total { border-left: 3px solid var(--accent-total); }
+.metric-card.total:hover {
+    box-shadow: 0 0 15px rgba(244, 63, 94, 0.25);
+    border-color: var(--accent-total);
+}
+
+.metric-card.ldm:hover {
+    box-shadow: 0 0 15px rgba(251, 191, 36, 0.25);
+    border-color: var(--accent-gold);
+}
+
+.metric-card.total-energy:hover {
+    box-shadow: 0 0 15px rgba(244, 63, 94, 0.25);
+    border-color: var(--accent-total);
+}
+
+.metric-card.shape:hover {
+    box-shadow: 0 0 15px rgba(251, 191, 36, 0.25);
+    border-color: #fbbf24;
+}
+
+/* Tooltip popup balloon */
+.metric-card::after {
+    content: attr(data-tooltip);
+    position: absolute;
+    top: calc(100% + 10px);
+    bottom: auto;
+    left: 50%;
+    transform: translate(-50%, -5px) scale(0.95);
+    width: 250px;
+    padding: 0.8rem;
+    background: #050811; /* Fully solid dark background (no transparency) */
+    border: 1px solid rgba(0, 240, 255, 0.3); /* Cyan accent border for readability */
+    border-radius: 8px;
+    color: #ffffff; /* Pure white text for maximum readability */
+    font-size: 0.82rem;
+    font-family: 'Inter', sans-serif;
+    line-height: 1.45;
+    font-weight: 500; /* Medium font weight for high contrast */
+    text-align: left;
+    white-space: normal;
+    z-index: 999;
+    pointer-events: none;
+    opacity: 0;
+    transition: opacity 0.2s ease, transform 0.2s ease;
+    box-shadow: 0 10px 30px rgba(0, 0, 0, 0.95);
+}
+
+/* Tooltip balloon arrow pointer (pointing up) */
+.metric-card::before {
+    content: '';
+    position: absolute;
+    top: calc(100% + 4px);
+    bottom: auto;
+    left: 50%;
+    transform: translate(-50%, -5px);
+    border-width: 6px;
+    border-style: solid;
+    border-color: transparent transparent rgba(0, 240, 255, 0.3) transparent;
+    z-index: 999;
+    pointer-events: none;
+    opacity: 0;
+    transition: opacity 0.2s ease, transform 0.2s ease;
+}
+
+/* Hover triggering */
+.metric-card:hover::after, .metric-card:hover::before {
+    opacity: 1;
+    transform: translate(-50%, 0) scale(1);
+}
+
+/* Adjust tooltip alignment for first and last cards to keep them on screen */
+.metric-card.proton::after {
+    left: 10px;
+    transform: translate(0, -5px) scale(0.95);
+}
+.metric-card.proton::before {
+    left: 40px;
+}
+.metric-card.proton:hover::after {
+    transform: translate(0, 0) scale(1);
+}
+
+.metric-card.shape::after {
+    left: auto;
+    right: 10px;
+    transform: translate(0, -5px) scale(0.95);
+}
+.metric-card.shape::before {
+    left: auto;
+    right: 40px;
+    transform: translate(0, -5px);
+}
+.metric-card.shape:hover::after {
+    transform: translate(0, 0) scale(1);
+}
+.metric-card.shape:hover::before {
+    transform: translate(0, 0);
+}
 
 .metric-label {
     font-size: 0.8rem;
@@ -444,28 +563,285 @@ canvas {
     border-radius: 3px;
 }
 
+/* Header actions and Drawer button styles */
+.header-actions {
+    display: flex;
+    align-items: center;
+    gap: 1.5rem;
+}
+
+.drawer-toggle-btn {
+    display: none;
+    background: linear-gradient(135deg, rgba(0, 240, 255, 0.15) 0%, rgba(16, 185, 129, 0.15) 100%);
+    border: 1px solid var(--accent-proton);
+    color: var(--text-primary);
+    padding: 0.5rem 1rem;
+    border-radius: 8px;
+    font-family: 'Outfit', sans-serif;
+    font-weight: 500;
+    font-size: 0.9rem;
+    cursor: pointer;
+    align-items: center;
+    gap: 0.4rem;
+    transition: all 0.2s ease;
+    box-shadow: 0 0 10px rgba(0, 240, 255, 0.1);
+}
+
+.drawer-toggle-btn:hover {
+    background: linear-gradient(135deg, rgba(0, 240, 255, 0.25) 0%, rgba(16, 185, 129, 0.25) 100%);
+    box-shadow: 0 0 15px rgba(0, 240, 255, 0.3);
+}
+
+/* Mobile Drawer Overlay */
+.drawer-overlay {
+    position: fixed;
+    top: 0;
+    left: 0;
+    width: 100vw;
+    height: 100vh;
+    background: rgba(4, 6, 12, 0.65);
+    backdrop-filter: blur(4px);
+    -webkit-backdrop-filter: blur(4px);
+    z-index: 999;
+    display: none;
+    opacity: 0;
+    transition: opacity 0.3s ease;
+}
+
+.drawer-overlay.active {
+    display: block;
+    opacity: 1;
+}
+
+/* Collapsible Explainer Details styling */
+.explainer-details {
+    width: 100%;
+}
+
+.explainer-details summary {
+    font-family: 'Outfit', sans-serif;
+    font-size: 1.05rem;
+    font-weight: 600;
+    color: var(--text-primary);
+    cursor: pointer;
+    list-style: none;
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    padding: 0.25rem 0;
+    outline: none;
+}
+
+.explainer-details summary::-webkit-details-marker {
+    display: none;
+}
+
+.explainer-details summary::after {
+    content: '▼';
+    font-size: 0.75rem;
+    color: var(--accent-proton);
+    transition: transform 0.2s ease;
+}
+
+.explainer-details[open] summary::after {
+    transform: rotate(180deg);
+}
+
+.explainer-content {
+    margin-top: 0.75rem;
+    border-top: 1px solid var(--border-color);
+    padding-top: 0.75rem;
+}
+
+/* Range input mobile enhancement */
+@media (hover: none) {
+    input[type=range]::-webkit-slider-thumb {
+        height: 22px;
+        width: 22px;
+        margin-top: -8px;
+    }
+}
+
 /* Responsive media queries */
 @media (max-width: 1024px) {
-    .app-container {
-        flex-direction: column;
-        height: auto;
-        overflow: visible;
+    .drawer-toggle-btn {
+        display: flex;
     }
     
-    .sidebar {
+    .header-credit {
+        display: block !important;
+        font-size: 0.75rem !important;
+    }
+    
+    .app-container {
+        flex-direction: column;
+        height: calc(100vh - 64px);
+        overflow-y: auto;
+        overflow-x: hidden;
         width: 100%;
-        height: auto;
-        overflow: visible;
-        border-right: none;
-        border-bottom: 1px solid var(--border-color);
+        max-width: 100%;
+    }
+    
+    /* Convert Sidebar to off-canvas slide-over drawer */
+    .sidebar {
+        position: fixed;
+        top: 0;
+        left: 0;
+        width: 320px;
+        height: 100vh;
+        z-index: 1000;
+        background: #090d1a;
+        transform: translateX(-100%);
+        transition: transform 0.3s cubic-bezier(0.4, 0, 0.2, 1);
+        border-right: 1px solid var(--border-color);
+        border-bottom: none;
+        box-shadow: 10px 0 30px rgba(0, 0, 0, 0.6);
+        overflow-y: auto;
+        display: flex;
+        flex-direction: column;
+        gap: 1.5rem;
+        padding: 1.5rem;
+    }
+    
+    .sidebar.active {
+        transform: translateX(0);
     }
     
     .dashboard {
         height: auto;
-        overflow: visible;
+        overflow-y: visible;
+        overflow-x: hidden;
+        padding: 1rem;
+        width: 100%;
+        max-width: 100%;
+        min-width: 0;
+        box-sizing: border-box;
     }
     
     .grid-2col {
         grid-template-columns: 1fr;
+        min-width: 0;
+        width: 100%;
+    }
+    
+    .canvas-card, .explainer-card, .view-panel {
+        min-width: 0;
+        width: 100%;
+        max-width: 100%;
+        box-sizing: border-box;
+    }
+    
+    /* Make the canvas preview area stack vertically on mobile in Nilsson levels view */
+    .canvas-card .canvas-container[style*="display: flex"] {
+        display: flex !important;
+        flex-direction: column !important;
+        aspect-ratio: auto !important;
+        height: auto !important;
+        gap: 1rem !important;
+    }
+    
+    .canvas-card .canvas-container[style*="display: flex"] > div {
+        aspect-ratio: 1.5;
+        flex: none !important;
+        width: 100% !important;
+        height: 240px !important;
+    }
+    
+    .canvas-container {
+        aspect-ratio: 1.3;
+        max-width: 100%;
+    }
+    
+    .tabs {
+        flex-wrap: wrap;
+        gap: 0.35rem;
+        border-radius: 12px;
+        padding: 4px;
+    }
+    
+    .tab-btn {
+        font-size: 0.85rem;
+        padding: 0.6rem 0.5rem;
+        flex: 1 1 auto;
+        text-align: center;
+    }
+    
+    .metrics-row {
+        grid-template-columns: repeat(2, 1fr);
+        gap: 0.75rem;
+    }
+
+    /* Mobile-specific tooltip alignments to keep them on screen */
+    .metric-card:nth-child(odd)::after {
+        left: 10px;
+        right: auto;
+        transform: translate(0, -5px) scale(0.95);
+    }
+    .metric-card:nth-child(odd)::before {
+        left: 40px;
+        right: auto;
+        transform: translate(0, -5px);
+    }
+    .metric-card:nth-child(odd):hover::after {
+        transform: translate(0, 0) scale(1);
+    }
+    .metric-card:nth-child(odd):hover::before {
+        transform: translate(0, 0);
+    }
+
+    .metric-card:nth-child(even)::after {
+        left: auto;
+        right: 10px;
+        transform: translate(0, -5px) scale(0.95);
+    }
+    .metric-card:nth-child(even)::before {
+        left: auto;
+        right: 40px;
+        transform: translate(0, -5px);
+    }
+    .metric-card:nth-child(even):hover::after {
+        transform: translate(0, 0) scale(1);
+    }
+    .metric-card:nth-child(even):hover::before {
+        transform: translate(0, 0);
+    }
+}
+
+@media (max-width: 480px) {
+    header {
+        padding: 0.75rem 1rem;
+        flex-direction: column;
+        align-items: flex-start;
+        gap: 0.75rem;
+    }
+    
+    header h1 {
+        font-size: 1.15rem;
+    }
+    
+    .header-actions {
+        width: 100%;
+        justify-content: space-between;
+    }
+    
+    .dashboard {
+        padding: 0.75rem;
+    }
+    
+    .metrics-row {
+        grid-template-columns: repeat(2, 1fr);
+        gap: 0.5rem;
+    }
+    
+    .metric-card {
+        padding: 0.6rem;
+    }
+    
+    .metric-value {
+        font-size: 1.15rem;
+    }
+    
+    .metric-sub {
+        font-size: 0.7rem;
     }
 }
