@@ -13,7 +13,7 @@ import {
     updatePESCache,
     getLundCoordinatesFromEvent
 } from './render.js';
-import { nilssonEnergies, calculateShellCorrection, calculateLDM } from './physics.js';
+import { nilssonEnergies, calculateShellCorrection, calculateLDM, thermalDampingFactor } from './physics.js';
 
 // Application state
 const state = {
@@ -22,6 +22,7 @@ const state = {
     beta: 0.20,          // Quadrupole deformation magnitude
     gamma_shape: 0,      // Triaxiality parameter (degrees)
     gamma: 1.20,         // Smearing width (factor of hbar*omega_0)
+    T: 0.00,             // Nuclear temperature (MeV)
     nucleonType: 'proton', // 'proton' or 'neutron' for level diagram
     paramSet: 'universal', // Parameter set ID
     pOrder: 6,           // Hermite polynomial order
@@ -71,6 +72,9 @@ const el = {
     metricStableB: document.getElementById('m-stable-b'),
     metricStableG: document.getElementById('m-stable-g'),
     
+    tempSlider: document.getElementById('temp-slider'),
+    tempVal: document.getElementById('temp-val'),
+    
     // Mobile Drawer elements
     drawerToggleBtn: document.getElementById('drawer-toggle-btn'),
     drawerOverlay: document.getElementById('drawer-overlay'),
@@ -79,6 +83,8 @@ const el = {
 
 // Initialize event listeners and 3D scenes
 function init() {
+    console.log("PES Visualizer: init() started.");
+    
     // 1. Populate presets select options
     PRESETS.forEach((preset, idx) => {
         const opt = document.createElement('option');
@@ -145,6 +151,17 @@ function init() {
             onSmearingChanged();
         });
     }
+    
+    if (el.tempSlider) {
+        el.tempSlider.addEventListener('input', (e) => {
+            state.T = parseFloat(e.target.value);
+            console.log("PES Visualizer: Temperature slider input triggered. T =", state.T);
+            el.tempVal.textContent = `${state.T.toFixed(2)} MeV`;
+            onTemperatureChanged();
+        });
+    }
+    
+    console.log("PES Visualizer: init() completed. All event listeners registered.");
     
     // Nucleon level display toggle
     el.toggleProton.addEventListener('click', () => {
@@ -325,6 +342,8 @@ function loadPreset(preset) {
         state.gamma_shape = 0;
     }
     
+    state.T = 0.00;
+    
     // Update sliders and text values
     el.zSlider.value = state.Z;
     el.zVal.textContent = state.Z;
@@ -334,6 +353,10 @@ function loadPreset(preset) {
     el.betaVal.textContent = state.beta.toFixed(2);
     el.gammaShapeSlider.value = state.gamma_shape;
     el.gammaShapeVal.textContent = `${state.gamma_shape}°`;
+    if (el.tempSlider) {
+        el.tempSlider.value = 0.00;
+        el.tempVal.textContent = "0.00 MeV";
+    }
     
     // Determine appropriate param set
     if (state.Z > 80 || state.N > 120) {
@@ -390,6 +413,14 @@ function onSmearingChanged() {
     updatePESRepresentation();
 }
 
+// Event triggered when nuclear temperature changes
+function onTemperatureChanged() {
+    updateMetrics();
+    drawNilssonDiagram(el.nilssonCanvas, state);
+    drawPlateauDiagram(el.plateauCanvas, state);
+    updatePESRepresentation();
+}
+
 // Triggers active representation updates (3D surface mesh vs. 2D polar projection canvas)
 function updatePESRepresentation() {
     if (state.pesViewMode === '3d') {
@@ -404,6 +435,7 @@ function updateMetrics() {
     const A = state.Z + state.N;
     const hw0_base = 41.0 * Math.pow(A, -1.0 / 3.0);
     const gMeV = state.gamma * hw0_base;
+    const fDamp = thermalDampingFactor(state.T, A);
     
     // Calculate current coordinates energy values
     const ldm = calculateLDM(state.beta, state.gamma_shape, state.Z, state.N);
@@ -412,15 +444,18 @@ function updateMetrics() {
     
     const shp = calculateShellCorrection(pOrbs, state.Z, gMeV, state.pOrder);
     const shn = calculateShellCorrection(nOrbs, state.N, gMeV, state.pOrder).deltaE;
-    const shellCorr = shp.deltaE + shn;
+    
+    const shpDamped = shp.deltaE * fDamp;
+    const shnDamped = shn * fDamp;
+    const shellCorr = shpDamped + shnDamped;
     const totalEnergy = ldm.E_ldm_rel + shellCorr;
     
     // Update numerical values
     el.metricZP.textContent = state.Z;
     el.metricNN.textContent = state.N;
     el.metricA.textContent = A;
-    el.metricShellP.textContent = `${shp.deltaE.toFixed(2)} MeV`;
-    el.metricShellN.textContent = `${shn.toFixed(2)} MeV`;
+    el.metricShellP.textContent = `${shpDamped.toFixed(2)} MeV`;
+    el.metricShellN.textContent = `${shnDamped.toFixed(2)} MeV`;
     el.metricShellTot.textContent = `${shellCorr.toFixed(2)} MeV`;
     el.metricLdmRel.textContent = `${ldm.E_ldm_rel.toFixed(2)} MeV`;
     el.metricEtot.textContent = `${totalEnergy.toFixed(2)} MeV`;
@@ -441,8 +476,8 @@ function updateMetrics() {
             const curL = calculateLDM(b, g, state.Z, state.N).E_ldm_rel;
             const pO = nilssonEnergies(b, g, A, 'proton', state.paramSet).orbitals;
             const nO = nilssonEnergies(b, g, A, 'neutron', state.paramSet).orbitals;
-            const sP = calculateShellCorrection(pO, state.Z, gMeV, state.pOrder).deltaE;
-            const sN = calculateShellCorrection(nO, state.N, gMeV, state.pOrder).deltaE;
+            const sP = calculateShellCorrection(pO, state.Z, gMeV, state.pOrder).deltaE * fDamp;
+            const sN = calculateShellCorrection(nO, state.N, gMeV, state.pOrder).deltaE * fDamp;
             const eTot = curL + sP + sN;
             
             if (eTot < minEtot) {
@@ -482,5 +517,9 @@ function debounce(func, wait) {
     };
 }
 
-// Load script on DOM ready
-document.addEventListener('DOMContentLoaded', init);
+// Load script on DOM ready (with fallback if DOM is already interactive/complete)
+if (document.readyState === 'loading') {
+    document.addEventListener('DOMContentLoaded', init);
+} else {
+    init();
+}

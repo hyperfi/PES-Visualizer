@@ -323,3 +323,23 @@ export const PRESETS = [
     { name: "Pb208 (Pb, Z=82, N=126)", Z: 82, N: 126, type: "double-magic" },
     { name: "Nd150 (Nd, Z=60, N=90)", Z: 60, N: 90, type: "deformed" }
 ];
+
+// Calculate Fermi-Dirac occupation factor
+export function fermiDiracOccupation(e, lambda, T) {
+    if (T < 0.01) {
+        return e <= lambda ? 1.0 : 0.0;
+    }
+    const arg = (e - lambda) / T;
+    if (arg > 30) return 0.0;
+    if (arg < -30) return 1.0;
+    return 1.0 / (1.0 + Math.exp(arg));
+}
+
+// Calculate thermal damping factor for shell corrections
+export function thermalDampingFactor(T, A) {
+    if (T < 0.01) return 1.0;
+    const hw0_base = 41.0 * Math.pow(A, -1.0 / 3.0);
+    const tau = (2.0 * Math.PI * Math.PI * T) / hw0_base;
+    if (tau > 30) return 0.0;
+    return tau / Math.sinh(tau);
+}
